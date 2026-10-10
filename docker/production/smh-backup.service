@@ -1,0 +1,11 @@
+[Unit]
+Description=Encrypted SMH Learning database and uploads backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/smh-learn
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/smh-learn/scripts/backup-production.py --passphrase-file /etc/smh-learning/backup.pass
+TimeoutStartSec=3600

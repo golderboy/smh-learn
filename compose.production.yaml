@@ -1,0 +1,107 @@
+name: ${SMH_PROJECT_NAME:-smh-learning-production}
+
+x-logging: &logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-app: &app
+  image: ${SMH_APP_IMAGE:-smh-learning-app:1.0.0}
+  build:
+    context: .
+    dockerfile: docker/production/Dockerfile
+    target: app
+  env_file: .env.production
+  volumes:
+    - storage-data:/var/www/html/storage
+  tmpfs:
+    - /tmp:uid=33,gid=33,mode=1770
+    - /var/www/html/bootstrap/cache:uid=33,gid=33,mode=0770
+  read_only: true
+  init: true
+  restart: unless-stopped
+  logging: *logging
+
+services:
+  app:
+    <<: *app
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, php, -r, "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+  nginx:
+    image: ${SMH_WEB_IMAGE:-smh-learning-web:1.0.0}
+    build:
+      context: .
+      dockerfile: docker/production/Dockerfile
+      target: web
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:80"
+    volumes:
+      - storage-data:/var/www/html/storage:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/up]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  mariadb:
+    image: mariadb:11.8@sha256:6422478cb8e159f080fb1d8ccf65101e26fe51385787fde7d16c3b165a331f15
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE:?Generate .env.production first}
+      MARIADB_USER: ${DB_USERNAME:?Generate .env.production first}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Generate .env.production first}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Generate .env.production first}
+    command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci]
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+  redis:
+    image: redis:8-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
+    command: [redis-server, --appendonly, "yes"]
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  queue-worker:
+    <<: *app
+    command: [php, artisan, queue:work, redis, --sleep=1, --tries=3, --timeout=180]
+    depends_on:
+      app:
+        condition: service_healthy
+    stop_grace_period: 200s
+  scheduler:
+    <<: *app
+    command: [php, artisan, schedule:work]
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  mariadb-data:
+  redis-data:
+  storage-data:

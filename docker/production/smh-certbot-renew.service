@@ -1,0 +1,7 @@
+[Unit]
+Description=Renew SMH Learning HTTPS certificate
+After=network-online.target nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/certbot renew --quiet --deploy-hook "/usr/sbin/nginx -s reload"

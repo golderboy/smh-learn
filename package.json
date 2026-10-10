@@ -1,0 +1,46 @@
+{
+    "name": "smh-learning",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=24 <25"
+    },
+    "scripts": {
+        "dev": "vite --host 127.0.0.1",
+        "build": "vue-tsc --noEmit && vite build",
+        "typecheck": "vue-tsc --noEmit",
+        "lint": "eslint --max-warnings 0 resources/js tests/Browser scripts/run-playwright.mjs vite.config.ts vitest.config.ts playwright.config.ts eslint.config.mjs",
+        "format:check": "prettier --check resources/js resources/css tests/Browser scripts/*.mjs *.ts *.mjs package.json README.md",
+        "format": "prettier --write resources/js resources/css tests/Browser scripts/*.mjs *.ts *.mjs package.json README.md",
+        "test:unit": "vitest run",
+        "test:e2e": "node scripts/run-playwright.mjs test",
+        "browsers:install": "node scripts/run-playwright.mjs install chromium"
+    },
+    "dependencies": {
+        "@inertiajs/vue3": "3.8.0",
+        "pdfjs-dist": "6.4.299",
+        "vue": "3.5.43"
+    },
+    "devDependencies": {
+        "@eslint/js": "10.0.1",
+        "@playwright/test": "1.63.0",
+        "@tailwindcss/vite": "4.3.3",
+        "@types/node": "24.19.1",
+        "@vitejs/plugin-vue": "6.0.9",
+        "@vue/test-utils": "2.5.1",
+        "eslint": "10.12.0",
+        "eslint-config-prettier": "10.1.8",
+        "eslint-plugin-vue": "10.11.1",
+        "globals": "17.13.0",
+        "jsdom": "30.1.2",
+        "laravel-vite-plugin": "3.2.0",
+        "prettier": "3.9.9",
+        "tailwindcss": "4.3.3",
+        "typescript": "6.0.3",
+        "typescript-eslint": "8.71.1",
+        "vite": "8.3.3",
+        "vitest": "5.0.3",
+        "vue-tsc": "3.3.12"
+    }
+}

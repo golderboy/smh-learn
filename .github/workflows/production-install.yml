@@ -1,0 +1,29 @@
+name: Production image and clean installation
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  clean-install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate isolated settings
+        run: python3 scripts/setup-production.py --domain ci.example.org --port 18080 --project smh-release-ci
+      - name: Build and install from an empty database
+        run: sh scripts/install-production.sh
+      - name: Check runtime and a real queue round trip
+        run: |
+          dc() { docker compose --env-file .env.production -f compose.production.yaml "$@"; }
+          dc exec -T app composer check-platform-reqs --no-dev
+          dc exec -T nginx nginx -t
+          dc exec -T app sh -c 'for kind in departments positions categories users stores; do test -r "docs/templates/master-$kind.xlsx"; done; test -r docs/templates/objective-exam-template.xlsx'
+          dc exec -T app php artisan schedule:run
+          dc exec -T app php artisan ops:check --queue --json
+          curl --fail http://127.0.0.1:18080/up
+      - name: Validate source archive
+        run: python3 scripts/package-release.py

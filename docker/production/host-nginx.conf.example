@@ -1,0 +1,13 @@
+# Replace learning.example.org and ensure APP_URL uses the same hostname.
+# Bootstrap ACME only. Keep the application inaccessible until HTTPS is installed.
+log_format smh_public escape=json '{"status":$status,"method":"$request_method","duration_seconds":$request_time}';
+server {
+    listen 80;
+    listen [::]:80;
+    server_name learning.example.org;
+    client_max_body_size 110M;
+    access_log /var/log/nginx/smh-access.log smh_public;
+    error_log /var/log/nginx/smh-error.log crit;
+    location ^~ /.well-known/acme-challenge/ { root /var/www/letsencrypt; }
+    location / { return 503; }
+}
