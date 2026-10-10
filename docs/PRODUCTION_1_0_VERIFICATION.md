@@ -34,6 +34,9 @@
 | ส่งเบิก | เลือกคูปองสร้างใบ1รายการ5บาท, PDF200ลายเซ็น%PDF, CSV200 ยังไม่จ่ายเงินจริง |
 | Backup/restore | encrypted archive verified; กู้คืนprojectใหม่ เปรียบเทียบ47ตาราง/18ไฟล์ตรงกัน; APP_KEYเดิมถอดรหัสคูปองได้ |
 | ติดตั้งซ้ำ | ข้อมูลและรหัสใหม่คงอยู่, หน้าPHP200; recreateเฉพาะappแล้วNginxเดิมกลับใช้งานได้ |
+| รายงานผ่านworker | ส่งออกXLSX/CSV/PDF รายงานผลเรียนจริง ดาวน์โหลด200 ตรวจลายเซ็นไฟล์PK/%PDF |
+| การป้องกันrestore | manifestผิดปฏิเสธก่อนกู้คืน ฐานข้อมูลไม่ว่างปฏิเสธการเขียนทับ |
+| Release readiness | ops:release-checkผ่าน20ข้อ; ops:check --queue --backupผ่านทั้ง8ข้อในชุดทดสอบ |
 
 หลักฐานภายในเครื่องจัดทำ: output/wsl-production-install.log, output/wsl-production-reinstall-3.log, output/wsl-import-database-verification.json, output/wsl-backup-restore.log, output/wsl-data-restore-proof.json, output/playwright/manuals ภาพสำหรับคู่มือรวมอยู่ในdocs/manuals/assets/screenshots ไม่รวมฐานข้อมูล/credentials/backupในGitHub
 
@@ -45,4 +48,14 @@ AlmaLinux9จริงพร้อมSELinux/firewalld, UbuntuServerจริง
 
 คู่มือให้ขั้นตอนปลายทางและผลที่ต้องเห็น ต้องผ่านops:release-check, ops:check --queue --backup --tls และตรวจรับโดยเจ้าของระบบก่อนเปิดทั่วไป TLSทดสอบชั่วคราวไม่ได้ผ่านเกณฑ์certificateเชื่อถือได้/อายุ14วันของProductionจริง
 
-สถานะGitHub,การติดตั้งจากremoteและการลบทดลองจะเพิ่มหลังดำเนินการและยืนยันผลจริง
+## ติดตั้งจาก GitHub และถอนชุดทดสอบ
+
+ดึงsourceกลับจาก https://github.com/golderboy/smh-learn.git ด้วยgit clone ในWSL โดยไม่ใช้credentialของWindows สร้างprojectใหม่`smh-release-github-test`จากฐานข้อมูลว่าง Build/installผ่าน, platform/Nginx/queue/schedulerผ่าน,เริ่มจากadminsบัญชีเดียว จากนั้นloginบังคับเปลี่ยนรหัสและนำเข้า5หัวข้อผ่านUIครบอีกครั้ง ผู้ใช้10คน+adminsรวม11 เลข0นำหน้าครบ บทบาทlearner/รหัสแรก/บังคับเปลี่ยนถูกต้อง ร้านPENDINGและไม่มีoperatorอัตโนมัติ
+
+หลังผ่านทดสอบ ลบcontainers/networks/volumesของ3projectที่ตรวจชื่อก่อนลบ (`smh-production-wsl-test`, `smh-learning-restore-drill`, `smh-release-github-test`) แล้วterminate/unregisterเฉพาะ`SMH-Production-Test` ตรวจregistryและVHDแล้วถูกลบ เก็บ`Ubuntu-24.04`/`docker-desktop`เดิมไว้ เว็บDEV`http://127.0.0.1:8088/up`กลับ200และDocker Desktopเดิมยังทำงาน ไม่มีการresetรหัสหรือฐานข้อมูลDEV
+
+หลักฐานเพิ่ม: output/wsl-github-install.log, output/wsl-github-import-ui.log, output/wsl-github-import-database-verification.json, output/wsl-restore-guards.log, output/wsl-cleanup.log, output/wsl-uninstall-verification.json ไม่รวมไฟล์ทดสอบเหล่านี้ในGitHub
+
+คู่มือภาพประกอบมีPDFและHTMLครบ5เล่ม: AlmaLinux15หน้า, Ubuntu15หน้า, Windows16หน้า, Admin16หน้า, ผู้เรียน12หน้า ตรวจภาพทุกหน้าและข้อความไทย ไม่มีหน้าว่าง HTMLเปิดภาพเต็มและคัดลอกคำสั่งได้ ฟอนต์Sarabun/OFLรวมในsource
+
+รุ่นเผยแพร่ใช้tag`v1.0.0`พร้อมsourceZIP/คู่มือในGitHub Releases ดูผลbuild/installบนrunnerLinuxของtagได้ที่ [GitHub Actions](https://github.com/golderboy/smh-learn/actions) การตรวจWSLข้างต้นใช้sourceที่ดึงจากrepositoryก่อนเพิ่มรายงานถอนการติดตั้งและปรับภาพคู่มือครั้งสุดท้าย ไม่เปลี่ยนโค้ดruntimeระหว่างนั้น
